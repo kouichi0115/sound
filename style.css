@@ -1,0 +1,27 @@
+/* ボタンのコンテナ（ボタンを3つずつ並べる） */
+.button-container {
+    display: flex;
+    flex-wrap: wrap;  /* 折り返しを有効にする */
+    justify-content: center;  /* ボタンを中央揃え */
+    gap: 10px;  /* ボタンの間の余白 */
+    max-width: 650px;  /* 3つ並んだときの最大幅 */
+    margin: 0 auto; /* 中央配置 */
+}
+
+/* ボタンのデザイン */
+.soundButton {
+    font-size: 20px;
+    padding: 15px 30px;
+    width: 200px;
+    height: 80px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: center;
+}
+
+.soundButton:hover {
+    background-color: #45a049;
+}
