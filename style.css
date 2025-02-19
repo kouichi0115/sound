@@ -25,3 +25,19 @@
 .soundButton:hover {
     background-color: #45a049;
 }
+
+#stopButton {
+    font-size: 20px;
+    padding: 15px 30px;
+    width: 200px;
+    height: 80px;
+    background-color: #FF5733; /* 赤系のボタン */
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+#stopButton:hover {
+    background-color: #E64A19; /* 少し濃い赤 */
+}
