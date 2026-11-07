@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f7f5f0" />
+    <meta name="description" content="録音した音声をタイムスタンプ付きで文字起こしし、要約してドキュメントとして書き出せるボイスレコーダー。" />
+    <title>コエメモ｜文字起こしボイスレコーダー</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <header class="top">
+      <h1>コエメモ</h1>
+      <p class="sub">録音 → 文字起こし → 要約 → ドキュメント出力</p>
+      <button id="settingsBtn" class="icon-btn" aria-label="設定">⚙</button>
+    </header>
+
+    <main>
+      <!-- 録音 -->
+      <section class="card" id="recorderCard">
+        <div class="timer" id="timer">00:00</div>
+        <canvas id="meter" width="600" height="60" aria-hidden="true"></canvas>
+        <div class="rec-controls">
+          <button id="recBtn" class="rec-btn" aria-label="録音開始"><span></span></button>
+          <button id="pauseBtn" class="btn" disabled>一時停止</button>
+        </div>
+        <label class="check">
+          <input type="checkbox" id="liveToggle" checked />
+          録音中にリアルタイム文字起こし（ブラウザ音声認識）
+        </label>
+        <p class="hint" id="liveSupport"></p>
+        <div class="or">または</div>
+        <label class="btn file-btn">
+          音声ファイルを読み込む
+          <input type="file" id="fileInput" accept="audio/*,video/*" hidden />
+        </label>
+      </section>
+
+      <!-- 現在の録音 -->
+      <section class="card hidden" id="sessionCard">
+        <input id="titleInput" class="title-input" placeholder="タイトル" />
+        <p class="meta" id="sessionMeta"></p>
+        <audio id="player" controls preload="metadata"></audio>
+
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-tab="transcript" role="tab">文字起こし</button>
+          <button class="tab" data-tab="summary" role="tab">要約</button>
+          <button class="tab" data-tab="export" role="tab">書き出し</button>
+        </div>
+
+        <div class="panel" id="panel-transcript">
+          <div class="row">
+            <select id="whisperModel" aria-label="文字起こしモデル">
+              <option value="onnx-community/whisper-base">標準（whisper-base・約80MB）</option>
+              <option value="onnx-community/whisper-small">高精度（whisper-small・約250MB）</option>
+              <option value="onnx-community/whisper-tiny">高速（whisper-tiny・約40MB）</option>
+            </select>
+            <button id="whisperBtn" class="btn primary">高精度で文字起こし</button>
+          </div>
+          <p class="hint">端末内（ブラウザ）で Whisper を実行します。初回はモデルのダウンロードがあります。音声は外部に送信されません。</p>
+          <div class="progress hidden" id="whisperProgress"><div></div><span></span></div>
+          <div id="liveLine" class="live-line hidden"></div>
+          <ol id="segments" class="segments"></ol>
+          <p class="empty" id="segEmpty">まだ文字起こしがありません。</p>
+        </div>
+
+        <div class="panel hidden" id="panel-summary">
+          <div class="row">
+            <select id="summaryStyle" aria-label="要約の形式">
+              <option value="meeting">会議・打ち合わせ</option>
+              <option value="lecture">講義・セミナー</option>
+              <option value="interview">インタビュー</option>
+              <option value="memo">メモ・独り言</option>
+            </select>
+            <button id="summarizeBtn" class="btn primary">AIで要約</button>
+          </div>
+          <p class="hint" id="summaryHint"></p>
+          <div id="summary" class="summary"></div>
+        </div>
+
+        <div class="panel hidden" id="panel-export">
+          <label class="check"><input type="checkbox" id="incSummary" checked /> 要約を含める</label>
+          <label class="check"><input type="checkbox" id="incTranscript" checked /> タイムスタンプ付き全文を含める</label>
+          <div class="export-grid">
+            <button class="btn" data-export="docx">Word（.doc）</button>
+            <button class="btn" data-export="md">Markdown（.md）</button>
+            <button class="btn" data-export="txt">テキスト（.txt）</button>
+            <button class="btn" data-export="srt">字幕（.srt）</button>
+            <button class="btn" data-export="pdf">印刷 / PDF</button>
+            <button class="btn" data-export="audio">音声ファイル</button>
+          </div>
+          <button id="copyBtn" class="btn wide">クリップボードにコピー</button>
+        </div>
+
+        <button id="deleteBtn" class="btn danger wide">この録音を削除</button>
+      </section>
+
+      <!-- 履歴 -->
+      <section class="card">
+        <h2>保存した録音</h2>
+        <ul id="history" class="history"></ul>
+        <p class="empty" id="historyEmpty">まだ録音がありません。</p>
+      </section>
+    </main>
+
+    <dialog id="settings">
+      <form method="dialog">
+        <h2>設定</h2>
+        <label>Claude API キー（要約に使用）
+          <input type="password" id="apiKey" autocomplete="off" placeholder="sk-ant-..." />
+        </label>
+        <p class="hint">キーはこの端末のブラウザにのみ保存され、要約時に Anthropic API へ直接送信されます。未設定の場合は簡易要約（端末内）になります。</p>
+        <label>文字起こしの言語
+          <select id="lang">
+            <option value="ja">日本語</option>
+            <option value="en">英語</option>
+            <option value="zh">中国語</option>
+            <option value="ko">韓国語</option>
+          </select>
+        </label>
+        <div class="row end">
+          <button class="btn primary" value="save">保存</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status"></div>
+  </body>
+</html>
